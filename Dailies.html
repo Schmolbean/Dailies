@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Grid with Counter</title>
+    <style>
+        body {
+            background-image: url("background.jpg"); /* Ersetze mit deinem Hintergrundbild */
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px;
+            gap: 2cm; /* Abstand zwischen den Button-Gruppen */
+        }
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(6, auto); /* 6 Spalten */
+            gap: 10px; /* Abstand zwischen den Buttons */
+            justify-content: center;
+            position: relative;
+        }
+        button {
+            border: none;
+            background-color: transparent;
+            cursor: pointer;
+        }
+        button:hover {
+            
+        }
+        button img {
+            width: 50px; /* Einheitliche Breite für alle Buttons */
+            height: auto; /* Beibehalten des Seitenverhältnisses */
+            border: 2px solid transparent; /* Anfangs ist der Rand transparent */
+            transition: border-color 0.3s ease; /* Sanfte Übergänge */
+        }
+        img.active {
+            border-color: gold; /* Goldener Rand */
+        }
+        img.time-based {
+            border-color: #1E2779; /* Dunkelblauer Rand */
+        }
+        button:disabled {
+            cursor: default; /* Ändert den Cursor, wenn der Button deaktiviert ist */
+        }
+        .extra-buttons {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px; /* Abstand zwischen den Extra-Buttons */
+        }
+        .extra-buttons button img {
+            object-fit: contain; /* Beibehalten des Seitenverhältnisses für Extra-Buttons */
+        }
+        .counter-container {
+            position: relative;
+            bottom: 0;
+            left: calc(100% + 380px); /* 425px rechts neben dem letzten Button */
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 0px;
+        }
+        .counter {
+            display: flex;
+            align-items: center;
+            gap: 0px;
+            font-size: 1.5em;
+            color: white;
+        }
+        .counter img {
+            width: 25px; /* Symbolgröße */
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="button-grid" id="button-grid">
+            <!-- Die Buttons werden dynamisch generiert -->
+        </div>
+        <div class="extra-buttons">
+            <button data-image="DailiesButton2.png"></button>
+            <button data-image="DailiesButton3.png"></button>
+            <button data-image="DailiesButton4.png"></button> <!-- DailiesButton4 -->
+        </div>
+    </div>
+
+    <div class="counter-container" id="counter-container">
+        <div class="counter">
+            <img src="counter-icon.png" alt="Counter Icon"> <!-- Ersetze mit deinem Zähler-Symbol -->
+            <span id="gold-count">0</span>
+        </div>
+    </div>
+
+    <script>
+        const buttonGrid = document.getElementById('button-grid');
+        const totalButtons = 31; // Anzahl der regulären Buttons
+        const counterDisplay = document.getElementById('gold-count');
+        const extraButtons = document.querySelectorAll('.extra-buttons button');
+        
+        // Zustände aus localStorage laden
+        const savedStates = JSON.parse(localStorage.getItem('buttonStates')) || Array(totalButtons + 3).fill({ state: null });
+
+        // Gesamtzahl der goldenen Ränder berechnen (inkl. Gewichtung für spezielle Buttons)
+        let totalGoldCount = savedStates.reduce((count, button, index) => {
+            let weight = 0;
+            if (button.state === 'gold') {
+                if (index === totalButtons) weight = 2; // DailiesButton2
+                else if (index === totalButtons + 1) weight = 4; // DailiesButton3
+                else if (index === totalButtons + 2) weight = 1; // DailiesButton4
+                else weight = 1; // Reguläre Buttons
+                return count + weight;
+            }
+            return count;
+        }, 0);
+
+        counterDisplay.textContent = totalGoldCount;
+
+        // Zähler und LocalStorage aktualisieren
+        const updateCounter = () => {
+            counterDisplay.textContent = totalGoldCount;
+            localStorage.setItem('buttonStates', JSON.stringify(savedStates));
+        };
+
+        // Buttons dynamisch generieren
+        for (let i = 0; i < totalButtons; i++) {
+            const button = document.createElement('button');
+            const img = document.createElement('img');
+            img.src = "DailiesButton.png";
+            img.alt = `Button ${i + 1}`;
+            img.style.width = "50px";
+            img.style.height = "auto";
+
+            // Speichern des Zustands
+            const savedState = savedStates[i];
+            if (savedState.state === 'gold') {
+                img.classList.add('active');
+                button.disabled = true;
+                totalGoldCount += 1;
+            } else if (savedState.state === 'blue') {
+                img.classList.add('time-based');
+                button.disabled = true;
+            }
+
+            // Klick-Event für Button
+            button.addEventListener('click', () => {
+                if (!img.classList.contains('active')) {
+                    img.classList.add('active');
+                    button.disabled = true;
+                    savedStates[i] = { state: 'gold' };
+                    totalGoldCount += 1;
+                    updateCounter();
+                }
+            });
+
+            // Rechtsklick-Event zum Ändern des Randes
+            button.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                const choice = prompt("Gib 'gold' für goldenen Rand, 'blue' für blauen Rand oder 'none' für Entfernen des Randes ein:");
+                if (choice === 'gold') {
+                    if (!img.classList.contains('active')) {
+                        img.classList.add('active');
+                        img.classList.remove('time-based');
+                        button.disabled = true;
+                        savedStates[i] = { state: 'gold' };
+                        totalGoldCount += 1;
+                        updateCounter();
+                    }
+                } else if (choice === 'blue') {
+                    img.classList.add('time-based');
+                    img.classList.remove('active');
+                    button.disabled = true;
+                    savedStates[i] = { state: 'blue' };
+                    updateCounter();
+                } else if (choice === 'none') {
+                    if (img.classList.contains('active')) {
+                        totalGoldCount -= 1;
+                    }
+                    img.classList.remove('active', 'time-based');
+                    button.disabled = false;
+                    savedStates[i] = { state: null };
+                    updateCounter();
+                }
+            });
+
+            button.appendChild(img);
+            buttonGrid.appendChild(button);
+        }
+
+        // Füge den Zähler direkt rechts vom letzten Button hinzu
+        const counterContainer = document.getElementById('counter-container');
+        buttonGrid.appendChild(counterContainer);
+
+        // Logik für Extra-Buttons
+        extraButtons.forEach((button, index) => {
+            const img = document.createElement('img');
+            img.src = button.dataset.image;
+            img.alt = `Extra Button ${index + 1}`;
+            img.style.width = "50px";
+            img.style.height = "auto";
+
+            // Gewicht für die Buttons festlegen
+            const weight = (index === 0) ? 2 : (index === 1) ? 4 : 1; // Gewicht: 2 für DailiesButton2, 4 für DailiesButton3, 1 für DailiesButton4
+
+            // Zustandsmanagement für die Buttons
+            const savedState = savedStates[totalButtons + index];
+            if (savedState?.state === 'gold') {
+                img.classList.add('active');
+                button.disabled = true; // Wenn der Button einmal aktiviert wurde, wird er deaktiviert
+                totalGoldCount += weight;
+            }
+
+            // Klick-Event für die Buttons
+            button.addEventListener('click', () => {
+                if (index === 2) { // "DailiesButton4.png" (Index 2) soll mehrfach klickbar sein
+                    img.classList.add('active'); // Goldener Rand wird gesetzt
+                    savedStates[totalButtons + index] = { state: 'gold' };
+                    totalGoldCount += 1; // Erhöht den Zähler um 1 bei jedem Klick
+                    updateCounter();
+                } else {
+                    if (!img.classList.contains('active')) {
+                        img.classList.add('active'); // Goldener Rand
+                        button.disabled = true; // Deaktiviert den Button nach einem Klick
+                        savedStates[totalButtons + index] = { state: 'gold' };
+                        totalGoldCount += weight; // Erhöht den Zähler um das Gewicht
+                        updateCounter();
+                    }
+                }
+            });
+
+            // Rechtsklick-Event für Extra-Buttons
+            button.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                const choice = prompt("Gib 'gold' für goldenen Rand, 'blue' für blauen Rand oder 'none' für Entfernen des Randes ein:");
+                if (choice === 'gold') {
+                    if (!img.classList.contains('active')) {
+                        img.classList.add('active');
+                        img.classList.remove('time-based');
+                        button.disabled = true;
+                        savedStates[totalButtons + index] = { state: 'gold' };
+                        totalGoldCount += weight;
+                        updateCounter();
+                    }
+                } else if (choice === 'blue') {
+                    img.classList.add('time-based');
+                    img.classList.remove('active');
+                    button.disabled = true;
+                    savedStates[totalButtons + index] = { state: 'blue' };
+                    updateCounter();
+                } else if (choice === 'none') {
+                    if (img.classList.contains('active')) {
+                        totalGoldCount -= weight;
+                    }
+                    img.classList.remove('active', 'time-based');
+                    button.disabled = false;
+                    savedStates[totalButtons + index] = { state: null };
+                    updateCounter();
+                }
+            });
+
+            button.appendChild(img);
+        });
+    </script>
+</body>
+</html>
