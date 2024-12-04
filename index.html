@@ -143,7 +143,7 @@
             const button = document.createElement('button');
             const img = document.createElement('img');
             img.src = "DailiesButton.png";
-            img.alt = `Button ${i + 1}`;
+            img.alt = `Button ${i + 1}`; 
             img.style.width = "50px";
             img.style.height = "auto";
 
@@ -151,11 +151,10 @@
             const savedState = savedStates[i];
             if (savedState.state === 'gold') {
                 img.classList.add('active');
-                button.disabled = true;
                 totalGoldCount += 1;
             } else if (savedState.state === 'blue') {
                 img.classList.add('blue');
-                button.disabled = true;
+
             }
 
             // Click event for button
@@ -195,30 +194,36 @@
             img.style.width = "50px";
             img.style.height = "auto";
 
-            // Load saved state for extra buttons
-            const savedState = savedStates[totalButtons + index];
-            if (savedState?.state === 'gold') {
-                img.classList.add('active');
-                if (index !== 2) button.disabled = true; // Disable other buttons except "DailiesButton4"
-                totalGoldCount += (index === 0) ? 2 : (index === 1) ? 4 : 1;
-            }
-
-            // Click event for the extra buttons
-            button.addEventListener('click', () => {
-                if (index === 2) { // "DailiesButton4.png" (Index 2) allows multiple clicks
-                    img.classList.add('active'); // Gold border
-                    totalGoldCount += 1; // Increase the counter by 1 on each click
-                    savedStates[totalButtons + index] = { state: 'gold' }; // Save state
-                    updateCounter();
-                } else {
-                    if (!img.classList.contains('active')) {
-                        img.classList.add('active'); // Gold border
-                        savedStates[totalButtons + index] = { state: 'gold' }; // Save state
-                        totalGoldCount += (index === 0) ? 2 : (index === 1) ? 4 : 1; // Update the counter by weight
-                        updateCounter();
+            if (index === 0 || index === 1) {
+                // DailiesButton2 and DailiesButton3 (3-click logic)
+                let clickCount = 0;
+                button.addEventListener('click', () => {
+                    clickCount++;
+                    if (clickCount === 1) {
+                        img.classList.add('blue'); // Blue border on first click
+                    } else if (clickCount === 2) {
+                        img.classList.remove('blue');
+                        img.classList.add('active'); // Gold border on second click
+                        savedStates[totalButtons + index] = { state: 'gold' };
+                        totalGoldCount += (index === 0 ? 2 : 4); // Weight applied (DailiesButton2: 2, DailiesButton3: 4)
+                    } else if (clickCount === 3) {
+                        img.classList.remove('blue');
+                        img.classList.remove('active'); // No border on third click
+                        savedStates[totalButtons + index] = { state: null };
+                        totalGoldCount -= (index === 0 ? 2 : 4); // Weight removed
+                        clickCount = 0; // Reset click count
                     }
-                }
-            });
+                    updateCounter();
+                });
+            } else if (index === 2) {
+                // DailiesButton4 (gold only)
+                button.addEventListener('click', () => {
+                    img.classList.add('active'); // Gold border only
+                    savedStates[totalButtons + index] = { state: 'gold' };
+                    totalGoldCount += 1; // Always adds 1 gold
+                    updateCounter();
+                });
+            }
 
             button.appendChild(img);
         });
@@ -228,15 +233,15 @@
             const buttons = document.querySelectorAll('.button-grid button img');
             buttons.forEach((img, i) => {
                 img.classList.remove('blue', 'active'); // Remove blue and gold borders
-                savedStates[i] = { state: null }; // Reset state to null
+                savedStates[i] = { state: null };
             });
-
-            // Reset the counter
-            totalGoldCount = 0;
+            extraButtons.forEach((button, index) => {
+                const img = button.querySelector('img');
+                img.classList.remove('blue', 'active'); // Remove borders from extra buttons
+                savedStates[totalButtons + index] = { state: null };
+            });
+            totalGoldCount = 0; // Reset the gold count
             updateCounter();
-
-            // Save the reset states to localStorage
-            localStorage.setItem('buttonStates', JSON.stringify(savedStates));
         });
     </script>
 </body>
